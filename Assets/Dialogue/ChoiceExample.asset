@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98696e1727f0820499057b6bda0129ef, type: 3}
+  m_Name: ChoiceExample
+  m_EditorClassIdentifier: 
+  longString: "Actor1: Hello!\n!Actor1: Wave, Actor2: Spin\n?Actor1\r\nChoice1\r\n
+    Actor1: Second text\nChoice2\r\n Actor1: First text\r\n ?Actor1\r\n Choice1\r\n 
+    Actor1: Second text\r\n Choice2\r\n  Actor1: third text\n  Actor2: fourth text\r\n
+    END\r\nEND"
