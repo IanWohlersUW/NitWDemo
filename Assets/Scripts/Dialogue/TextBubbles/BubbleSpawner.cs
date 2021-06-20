@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class BubbleSpawner : MonoBehaviour
 {
+    public static readonly KeyCode submitKey = KeyCode.Space;
     public TextBubble bubblePrefab;
 
     public IEnumerator CreateBubble(string text, Vector3 position)
@@ -12,7 +13,7 @@ public class BubbleSpawner : MonoBehaviour
         var bubble = Instantiate(bubblePrefab, position, Quaternion.identity);
         yield return new WaitForSeconds(0.1f);
         yield return FillBubble(text, bubble);
-        yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Z));
+        yield return new WaitUntil(() => Input.GetKeyDown(submitKey));
         // then detroy the dialogue
         Destroy(bubble.gameObject);
     }
@@ -26,7 +27,7 @@ public class BubbleSpawner : MonoBehaviour
         bubble.choiceArrows.SetActive(true);
         yield return new WaitForSeconds(0.1f);
         int choice = 0;
-        while (!Input.GetKeyDown(KeyCode.Z))
+        while (!Input.GetKeyDown(submitKey))
         {
             if (Input.GetKeyDown(KeyCode.RightArrow))
                 choice = (choice + 1) % choices.Count; // % so choices wrap around
