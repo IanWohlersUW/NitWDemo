@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour
     {
         instance = this; // Hacky singleton pattern but its fine
         canMove = true;
+        Debug.Log("Press Space to start dialogue! Press Z to progress diloauge. Arrows to choose");
     }
 
     // Update is called once per frame
