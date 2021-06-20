@@ -80,6 +80,11 @@ public class Dialogue : CustomCoroutine
             Debug.Log("Valid script!");
     }
 
+    /*
+     * Parses the given string into an ordered list of cutscenes/events to be sequenced
+     * We really should convert to an abstract syntax tree first then convert to an ineumerator,
+     * but... this is fine for a small project
+     */
     private List<IEnumerator> ParseScript(string script)
     {
         var parsers = new Dictionary<DialogueType, Func<IEnumerator<string>, IEnumerator>>()
