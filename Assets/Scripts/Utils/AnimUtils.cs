@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System;
 using UnityEngine;
 
 public class AnimUtils
@@ -19,5 +20,12 @@ public class AnimUtils
         Coroutine b = obj.StartCoroutine(second);
         yield return a;
         yield return b;
+    }
+    
+    // Converts an action into a coroutine
+    public static IEnumerator CreateActionCoroutine(Action action)
+    {
+        action();
+        yield return null;
     }
 }

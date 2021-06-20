@@ -11,16 +11,25 @@ Dialogue accepts a text script and translates it into a coroutine the can be sta
 
 Text (dialogue) is written in a specific syntax documented below:
 
+DIALOGUE
 ActorName: words words words
     -The above creates a text bubble above the named actor saying "words words words"
     -Dialogue boxes are progressed by pressing Z
     -An error will be logged if the named actor can't be found in the scene
 
+ANIMATIONS
 !ActorName: AnimationName
     -The above plays the named actor's animation, pausing dialogue until animation finished
     -An error will be logged if the named actor or animation can't be found
 !Actor1Name: AnimationName, Actor2Name: AnimationName, Actor3Name: AnimationName
     -The above plays the list of animations, pausing dialogue until all are finished
+
+STORING VARIABLES
+[True] -> VariableName
+    -The above stores the boolean value True into the named variable
+    -Currently only supports bools! Trivial to expand to numbers as well
+    -
+
 
 ?ActorName
 I like you
@@ -30,24 +39,12 @@ I love you
  !FiascoFox: Blush
  FiascoFox: I've... never had somebody tell me that before
 END
-
-...CoroutineName
-    -Plays the above coroutine
-    -Throws an error if the named coroutine couldn't be found in customCoroutines
-    -Muddles the final product. Maybe should delete this.
  */
 public class Dialogue : CustomCoroutine
 {
     public TextAreaScript dialogue;
-    public enum DialogueType { Dialogue, Action, Choice, SetParam, CustomCoroutine }
-
-    [Serializable]
-    public struct NamedCoroutine {
-        public string name;
-        public CustomCoroutine coroutine;
-    }
-    public List<NamedCoroutine> customCoroutines; // a library of custom coroutines for the user
-
+    public DialogueContext context;
+    public enum DialogueType { Dialogue, Action, Choice, StoreVariable }
     public override IEnumerator CreateCoroutine() => ParseScript(dialogue.longString);
 
     private void OnValidate()
@@ -64,13 +61,12 @@ public class Dialogue : CustomCoroutine
 
     public IEnumerator ParseScript(string script)
     {
-        Debug.Log($"parsing script [{script}]");
-
         var parsers = new Dictionary<DialogueType, Func<IEnumerator<string>, IEnumerator>>()
         {
             { DialogueType.Dialogue, ParseDialogue },
             { DialogueType.Choice, ParseChoice },
-            { DialogueType.Action, ParseAction }
+            { DialogueType.Action, ParseAction },
+            { DialogueType.StoreVariable, ParseStoreVariable }
         };
 
         var results = new List<IEnumerator>();
@@ -82,6 +78,8 @@ public class Dialogue : CustomCoroutine
             // Parser will extract the next ienumerator, or return NULL
             results.Add(parser(lines));
         }
+        if (results.Count == 0)
+            return null;
         return results.Aggregate(AnimUtils.SequenceCoroutines);
     }
     private static DialogueType GetDialogueType(string line)
@@ -92,8 +90,8 @@ public class Dialogue : CustomCoroutine
                 return DialogueType.Action;
             case '?':
                 return DialogueType.Choice;
-            case '~':
-                return DialogueType.SetParam;
+            case '[':
+                return DialogueType.StoreVariable;
             default:
                 return DialogueType.Dialogue;
         }
@@ -122,6 +120,24 @@ public class Dialogue : CustomCoroutine
         if (animations.Any(animation => animation == null))
             return null; // An animation couldn't be located
         return animations.Aggregate(AnimUtils.CombineCoroutines);
+    }
+
+    private IEnumerator ParseStoreVariable(IEnumerator<string> lines)
+    {
+        var split = lines.Current.Split(new string[]{" -> "}, 2, StringSplitOptions.None);
+        if (split.Length != 2)
+            return null;
+        var value = split[0].TrimStart('[').TrimEnd(']');
+        if (value != "True" && value != "False")
+            return null;
+        var variable = context.FindVariable(split[1]);
+        if (variable == null)
+        {
+            Debug.LogWarning($"Unable to locate variable {split[1]}");
+            return null;
+        }
+        Action storeVariable = () => variable.isTrue = (value == "True");
+        return AnimUtils.CreateActionCoroutine(storeVariable);
     }
 
     private IEnumerator ParseChoice(IEnumerator<string> lines)
