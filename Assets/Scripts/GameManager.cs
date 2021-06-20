@@ -1,23 +1,32 @@
 ﻿using UnityEngine;
+using System.Collections;
 public class GameManager : MonoBehaviour
 {
-    public BubbleSpawner bubbleSpawner;
-
     public static GameManager instance;
     public Dialogue dialogueExample;
+    public bool canMove;
+
     private void Awake()
     {
-        if (instance == null)
-            instance = this;
+        instance = this; // Hacky singleton pattern but its fine
+        canMove = true;
     }
 
 
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (canMove && Input.GetKeyDown(KeyCode.Space))
         {
-            StartCoroutine(dialogueExample.CreateCoroutine());
+            var dialogue = dialogueExample.CreateCoroutine();
+            StartCoroutine(DisableControlsUntilDone(dialogue));
         }
+    }
+
+    IEnumerator DisableControlsUntilDone(IEnumerator sequence)
+    {
+        canMove = false;
+        yield return sequence;
+        canMove = true;
     }
 }

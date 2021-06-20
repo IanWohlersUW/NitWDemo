@@ -18,11 +18,12 @@ public class BubbleSpawner : MonoBehaviour
     }
 
     public IEnumerator CreateBubble(string text, Transform character) =>
-        CreateBubble(text, character.position + Vector3.up);
+        CreateBubble(text, character.position + 2 * Vector3.up);
 
     public IEnumerator CreateChoiceBubble(List<string> choices, Vector3 position, Action<int> submitChoice)
     {
         var bubble = Instantiate(bubblePrefab, position, Quaternion.identity);
+        bubble.choiceArrows.SetActive(true);
         yield return new WaitForSeconds(0.1f);
         int choice = 0;
         while (!Input.GetKeyDown(KeyCode.Z))
@@ -42,7 +43,7 @@ public class BubbleSpawner : MonoBehaviour
     }
 
     public IEnumerator CreateChoiceBubble(List<string> choices, Transform character, Action<int> submitChoice)
-        => CreateChoiceBubble(choices, character.position + Vector3.up, submitChoice);
+        => CreateChoiceBubble(choices, character.position + 2 * Vector3.up, submitChoice);
 
     private IEnumerator FillBubble(string text, TextBubble bubble)
     {

@@ -5,9 +5,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /*
-So... if I don't have 
+Dialogue accepts a text script and translates it into a coroutine that can be started at any time
 
-Dialogue accepts a text script and translates it into a coroutine the can be started later
+Dialogue also has a context variable. If our dialogue is dependent on ScriptableObjects or elements
+in the scene, we can pass references to them via our context. If not, it's fine to leave context empty
 
 Text (dialogue) is written in a specific syntax documented below:
 
@@ -22,15 +23,19 @@ ANIMATIONS
     -The above plays the named actor's animation, pausing dialogue until animation finished
     -An error will be logged if the named actor or animation can't be found
 !Actor1Name: AnimationName, Actor2Name: AnimationName, Actor3Name: AnimationName
-    -The above plays the list of animations, pausing dialogue until all are finished
+    -The above plays the named animations simultaneously, pausing dialogue until ALL are finished
 
 STORING VARIABLES
 [True] -> VariableName
     -The above stores the boolean value True into the named variable
     -Currently only supports bools! Trivial to expand to numbers as well
-    -
+    -An error logged if the variable store in doesn't exist in the dialogue context
 
+[True] -> Actor.ParameterName
+    -The above stores the given boolean value into the actor's animator paramter
+    -An error logged if the named parameter doesn't exist
 
+CHOICES
 ?ActorName
 I like you
  FiascoFox: I've heard that one before
@@ -39,33 +44,49 @@ I love you
  !FiascoFox: Blush
  FiascoFox: I've... never had somebody tell me that before
 END
+FiascoFox: Sorry, I have to go!
+    -The above gives the player choose between "I like you" and "I love you"
+    -The indented block below the selected choice is played next. Then dialogue resumes below END
+    -Choice blocks can nested if you want to create a more complex dialogue tree
+    -An error is logged if an END line isn't included to indicate the end of the last choice
  */
 public class Dialogue : CustomCoroutine
 {
+    // We should give these fields a [NotNull] tag from https://github.com/redbluegames/unity-notnullattribute
     public TextAreaScript dialogue;
+    public BubbleSpawner bubbleSpawner; // Required for actually creating bubbles
     public DialogueContext context;
-    public enum DialogueType { Dialogue, Action, Choice, StoreVariable }
-    public override IEnumerator CreateCoroutine() => ParseScript(dialogue.longString);
+    public enum DialogueType { Dialogue, Animation, Choice, StoreVariable }
+    public override IEnumerator CreateCoroutine() => ParseScript(dialogue.longString)
+        .Aggregate(AnimUtils.SequenceCoroutines);
 
     private void OnValidate()
     {
-        return;
         /*
+         * A null enum represents a parse that failed.
+         * Because all animators and scene references are looked up before executing the coroutine
+         * if this check passes have a runtime garauntee the generated coroutine won't crash
+         * (Unless referenced gameObjects are destroyed in the scene prior to execution)
+         */
+        if (bubbleSpawner == null)
+        {
+            Debug.LogError("Dialogue needs a reference to bubbleSpawner");
+            return;
+        }
         var isValid = ParseScript(dialogue.longString).All((ienum) => ienum != null);
         if (!isValid)
-            Debug.LogError("Invalid Dialogue!"); // Need to log where it breaks
+            Debug.LogError("Invalid Dialogue!");
         else
             Debug.Log("Valid script!");
-        */
     }
 
-    public IEnumerator ParseScript(string script)
+    private List<IEnumerator> ParseScript(string script)
     {
         var parsers = new Dictionary<DialogueType, Func<IEnumerator<string>, IEnumerator>>()
         {
             { DialogueType.Dialogue, ParseDialogue },
             { DialogueType.Choice, ParseChoice },
-            { DialogueType.Action, ParseAction },
+            { DialogueType.Animation, ParseAnimation },
             { DialogueType.StoreVariable, ParseStoreVariable }
         };
 
@@ -78,16 +99,15 @@ public class Dialogue : CustomCoroutine
             // Parser will extract the next ienumerator, or return NULL
             results.Add(parser(lines));
         }
-        if (results.Count == 0)
-            return null;
-        return results.Aggregate(AnimUtils.SequenceCoroutines);
+        return results;
     }
+
     private static DialogueType GetDialogueType(string line)
     {
         switch (line[0]) // Type is inferred based on the first character of a line
         {
             case '!':
-                return DialogueType.Action;
+                return DialogueType.Animation;
             case '?':
                 return DialogueType.Choice;
             case '[':
@@ -97,17 +117,37 @@ public class Dialogue : CustomCoroutine
         }
     }
 
-    // Below are parsing scripts for each line type. The Choice one is fairly complex!
+    // --Below are parsing scripts for each line type. The Choice one is fairly complex!--
+
+    /*
+     * Creates a speech bubble above the actor holding their line. Closes when "Z" pressed.
+     * Automatically sets the "Talking" of the given actor to true until dialogue finished.
+     */
     private IEnumerator ParseDialogue(IEnumerator<string> lines)
     {
         var split = SplitLine(lines.Current);
         if (!split.HasValue)
             return null;
         (Animator actor, string text) = split.Value;
-        return GameManager.instance.bubbleSpawner.CreateBubble(text, actor.transform);
+        return ParseDialogueHelper(actor, text);
     }
 
-    private IEnumerator ParseAction(IEnumerator<string> lines)
+    private IEnumerator ParseDialogueHelper(Animator actor, string text)
+    {
+        var talkingParam = "Talking"; // This parameter will automatically be set true if present
+        bool canTalk = actor.HasParam(talkingParam, AnimatorControllerParameterType.Bool);
+        if (canTalk)
+            actor.SetBool(talkingParam, true);
+        yield return bubbleSpawner.CreateBubble(text, actor.transform);
+        if (canTalk)
+            actor.SetBool(talkingParam, false);
+    }
+
+    /*
+     * Parses out a given animation line. All animations looked up before execution.
+     * All animations on the line will be played simultaneously, waits until the last is finished
+     */
+    private IEnumerator ParseAnimation(IEnumerator<string> lines)
     {
         var actorsAndAnims = lines.Current.Substring(1)
             .Split(new string[] { ", " }, StringSplitOptions.None) // Get each (actor: anim) pair
@@ -122,24 +162,60 @@ public class Dialogue : CustomCoroutine
         return animations.Aggregate(AnimUtils.CombineCoroutines);
     }
 
+    /*
+     * Parses out a variable storage line. Currently only supports bools, but with better parsing
+     * and overrides, could support all primitive types.
+     * Values are stored either into an animator parameter or value reference (boolReference)
+     */
     private IEnumerator ParseStoreVariable(IEnumerator<string> lines)
     {
         var split = lines.Current.Split(new string[]{" -> "}, 2, StringSplitOptions.None);
         if (split.Length != 2)
             return null;
-        var value = split[0].TrimStart('[').TrimEnd(']');
-        if (value != "True" && value != "False")
-            return null;
-        var variable = context.FindVariable(split[1]);
-        if (variable == null)
+        var valueStr = split[0].TrimStart('[').TrimEnd(']');
+        if (valueStr != "True" && valueStr != "False")
         {
-            Debug.LogWarning($"Unable to locate variable {split[1]}");
+            Debug.LogWarning("Only 'True' or 'False' can be supplied as variable values");
             return null;
         }
-        Action storeVariable = () => variable.isTrue = (value == "True");
+        var value = valueStr == "True";
+        var varName = split[1].Split('.');
+        if (varName.Length == 1)
+            return StoreVariable(varName[0], value);
+        else if (varName.Length == 2)
+            return StoreParameter(varName[0], varName[1], value);
+        Debug.LogWarning($"Unable to parse varName {split[1]}");
+        return null;
+    }
+
+    private IEnumerator StoreParameter(string actorName, string paramName, bool value)
+    {
+        var actor = FindActor(actorName);
+        if (actor == null)
+            return null;
+        if (!actor.HasParam(paramName, AnimatorControllerParameterType.Bool))
+            Debug.LogWarning($"Parameter {paramName} does not exist on {actorName}");
+        Action setParameter = () => actor.SetBool(paramName, value);
+        return AnimUtils.CreateActionCoroutine(setParameter);
+    }
+
+    private IEnumerator StoreVariable(string varName, bool value)
+    {
+        int index = context.variables.FindIndex(contextVar => contextVar.name == name);
+        if (index < 0)
+        {
+            Debug.LogWarning($"Unable to locate variable {varName}");
+            return null;
+        }
+        var variable = context.variables[index];
+        Action storeVariable = () => variable.isTrue = value;
         return AnimUtils.CreateActionCoroutine(storeVariable);
     }
 
+    /*
+     * Parses a full choice block, see docs above for choice syntax.
+     * Choice blocks can be infinitely nested and are evaluated recursively
+     */
     private IEnumerator ParseChoice(IEnumerator<string> lines)
     {
         var actor = FindActor(lines.Current.Substring(1));
@@ -151,7 +227,7 @@ public class Dialogue : CustomCoroutine
             return null;
         var branchCoroutines = branches
             .AsEnumerable()
-            .ToDictionary(kvp => kvp.Key, kvp => ParseScript(kvp.Value));
+            .ToDictionary(kvp => kvp.Key, kvp => ParseScript(kvp.Value).Aggregate(AnimUtils.SequenceCoroutines));
         return CreateChoiceCoroutine(actor, branchCoroutines);
     }
 
@@ -199,10 +275,14 @@ public class Dialogue : CustomCoroutine
         int selected = 0;
         Action<int> onSubmit = (int choice) => selected = choice;
         var choices = branches.Keys.ToList();
-        yield return GameManager.instance.bubbleSpawner.CreateChoiceBubble(choices, actor.transform, onSubmit);
+        yield return bubbleSpawner.CreateChoiceBubble(choices, actor.transform, onSubmit);
         yield return branches[choices[selected]];
     }
 
+    /* 
+     * Splits a ": " separated line into its actor and text. Returns None if split failed or
+     * the actor couldn't be found
+     */
     private (Animator actor, string text)? SplitLine(string line)
     {
         var split = line.Split(new string[] { ": " }, 2, StringSplitOptions.None );
@@ -218,9 +298,14 @@ public class Dialogue : CustomCoroutine
         return (actor, text);
     }
 
+    // Looks up the named actor (Animator) in our scene. Returns null if they couldn't be found
     private Animator FindActor(string name)
     {
-        // Doing a .Find is really costly- we can memoize this but it runs rarely enough to not matter
+        /*
+         * Doing a .Find is really costly- we can memoize this to speed up performance
+         * Because FindActor is only run while parsing the dialogue the first time this shouldn't
+         * have a big impact on performance either way though
+         */
         var actor = GameObject.Find(name)?.GetComponent<Animator>();
         if (actor == null)
         {

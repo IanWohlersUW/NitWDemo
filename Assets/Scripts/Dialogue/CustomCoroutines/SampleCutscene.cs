@@ -4,12 +4,12 @@ using UnityEngine;
 
 public class SampleCutscene : CustomCoroutine
 {
-    public Animator actor;
+    public float time;
     public override IEnumerator CreateCoroutine()
     {
         Debug.Log("Starting sampleCutscene");
-        yield return new WaitForSeconds(0.5f);
-        Debug.Log("and finished sampleCutscene");
+        yield return new WaitForSeconds(time);
+        Debug.Log($"and finished after waiting for {time} seconds");
         yield return null;
     }
 }

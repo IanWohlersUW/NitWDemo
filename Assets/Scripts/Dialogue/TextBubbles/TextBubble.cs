@@ -8,6 +8,7 @@ public class TextBubble : MonoBehaviour
     public TextMeshPro words;
     public SpriteRenderer bubble;
     public SpriteRenderer arrow;
+    public GameObject choiceArrows;
     public List<TMP_FontAsset> font; // These fonts are cycled through!
 
     public IEnumerator AnimateFont(float delay)

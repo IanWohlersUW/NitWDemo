@@ -3,58 +3,38 @@ using System.Linq;
 using System;
 using UnityEngine;
 
+/*
+ * Extension methods mainly designed to make looking up animations/parameters simpler and
+ * layer-agnostic
+ */
 static class AnimatorExtension {
     private static UnityEditor.Animations.AnimatorController GetController(this Animator animator)
         => animator.runtimeAnimatorController as UnityEditor.Animations.AnimatorController;
 
-    public static bool HasAnimation(this Animator animator, string animName, int layer = 0)
-        => animator.GetController().animationClips.Any(clip => clip.name == animName);
-    // => animator.HasState(layer, Animator.StringToHash(animName)); Maybe... should do it like this still
+    public static bool HasAnimation(this Animator animator, string animName) => 
+        Enumerable.Range(0, animator.layerCount)
+        .Any(layer => animator.HasState(layer, Animator.StringToHash(animName)));
 
     public static bool HasParam(this Animator animator, string name, AnimatorControllerParameterType type)
         => animator.GetController().parameters.Any(param => param.type == type && param.name == name);
-    public static IEnumerator PlayAnimation(this Animator animator, string animName, int layer = 0)
+    public static IEnumerator PlayAnimation(this Animator animator, string animName)
     {
-        if (!animator.HasAnimation(animName, layer))
+        if (!animator.HasAnimation(animName))
         {
-            Debug.LogWarning($"Animation wasn't found:{animName}, layer:{layer} in animator:{animator}");
+            Debug.LogWarning($"Animation wasn't found:{animName}, in animator:{animator}");
             return null;
         }
-        return animator.PlayAnimationHelper(animName, layer);
+        return animator.PlayAnimationHelper(animName);
     }
 
-    private static IEnumerator PlayAnimationHelper(this Animator animator, string animName, int layer = 0)
+    private static IEnumerator PlayAnimationHelper(this Animator animator, string animName)
     {
-        animator.Play(animName, layer);
-        yield return new WaitUntil(() => animator.GetCurrentAnimatorStateInfo(0).IsName(animName));
-        yield return new WaitUntil(() => !animator.GetCurrentAnimatorStateInfo(0).IsName(animName));
+        animator.Play(animName);
+        yield return new WaitUntil(() => animator.InAnimation(animName));
+        yield return new WaitUntil(() => !animator.InAnimation(animName));
     }
 
-    // Safe IEnumerators for setting parameters of an animator
-    public static IEnumerator SetParameter(this Animator animator, string name, bool paramVal)
-    {
-        if (!animator.HasParam(name, AnimatorControllerParameterType.Bool))
-            return null;
-        return SetParameterHelper(animator.SetBool, name, paramVal);
-    }
-
-    public static IEnumerator SetParameter(this Animator animator, string name, float paramVal)
-    {
-        if (!animator.HasParam(name, AnimatorControllerParameterType.Float))
-            return null;
-        return SetParameterHelper(animator.SetFloat, name, paramVal);
-    }
-    public static IEnumerator SetParameter(this Animator animator, string name, int paramVal)
-    {
-        if (!animator.HasParam(name, AnimatorControllerParameterType.Int))
-            return null;
-        return SetParameterHelper(animator.SetInteger, name, paramVal);
-    }
-    // There's also SetTrigger... uhhh I'll do that later. This is just a demo!
-
-    private static IEnumerator SetParameterHelper<T>(Action<string, T> setParam, string name, T paramVal)
-    {
-        setParam(name, paramVal);
-        yield return null;
-    }
+   private static bool InAnimation(this Animator animator, string animName) =>
+        Enumerable.Range(0, animator.layerCount)
+        .Any(layer => animator.GetCurrentAnimatorStateInfo(layer).IsName(animName));
 }

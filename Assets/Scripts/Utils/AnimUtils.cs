@@ -15,7 +15,15 @@ public class AnimUtils
     // Finished when *both* children are finished
     public static IEnumerator CombineCoroutines(IEnumerator first, IEnumerator second)
     {
-        var obj = GameManager.instance; // I'm... more upset about needing to do this than I should
+        /*
+         * This has a hard dependency on GameManger which sucks.
+         * https://answers.unity.com/questions/712423/how-to-yield-on-two-coroutines-simulateously.html
+         * Doesn't quite work (nested yields break it)
+         * So instead I settled on this solution from:
+         * https://www.alanzucconi.com/2017/02/15/nested-coroutines-in-unity/
+         * I still think there's a way to do this though without StartCoroutine though :(
+         */
+        var obj = GameManager.instance;
         Coroutine a = obj.StartCoroutine(first);
         Coroutine b = obj.StartCoroutine(second);
         yield return a;
@@ -26,6 +34,6 @@ public class AnimUtils
     public static IEnumerator CreateActionCoroutine(Action action)
     {
         action();
-        yield return null;
+        yield return null; // (Note that this action does take a full frame)
     }
 }

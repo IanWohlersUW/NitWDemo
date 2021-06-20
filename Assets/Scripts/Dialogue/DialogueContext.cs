@@ -12,23 +12,12 @@ using UnityEngine;
 [Serializable]
 public class DialogueContext
 {
-    [SerializeField]
-    private List<BoolReference> variables;
-
-    [Serializable]
-    public class NamedCoroutine
-    {
-        public string name;
-        public CustomCoroutine coroutine;
-    }
-    [SerializeField]
-    private List<NamedCoroutine> coroutines;
-
-    public BoolReference FindVariable(string name)
-    {
-        int index = variables.FindIndex(variable => variable.name == name);
-        if (index < 0)
-            return null;
-        return variables[index];
-    }
+    public List<BoolReference> variables;
+    public List<CustomCoroutine> coroutines;
+    /*
+     * While coroutines currently goes unused, it'd be trivial to extend Dialogue.cs to support it
+     * This means that our dialogue parser handles most scripts, but if we wanted to play a special
+     * cutscene, QTE, etc we could roll that into a CustomCoroutine and inject it into the middle
+     * of our dialogue seamlessly. 
+     */
 }
