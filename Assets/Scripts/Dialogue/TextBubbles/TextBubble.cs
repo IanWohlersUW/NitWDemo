@@ -39,7 +39,6 @@ public class TextBubble : MonoBehaviour
         // Scale the bubble to fix text
         var height = 1.5f + 0.35f * words.textInfo.lineCount;
         bubble.gameObject.transform.localScale = new Vector3(1, height, 1);
-        // Is there a better way to do this programtically and maintain margins?
 
         var displacement = bubble.gameObject.transform.localScale.y + 0.75f;
         // Move the bubble up so the arrow is still under it
