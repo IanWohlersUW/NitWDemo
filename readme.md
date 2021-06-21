@@ -30,15 +30,15 @@ A = SpeechBubble("Hi Mae!"), B = A = SpeechBubble("How are u"), C = SpeechBubble
 
 Here's a diagram of iEnumerators A and B - both just blocks that wait for user input.
 
-![Two coroutines](Image/twoOfThem.png)
+![Two coroutines](Images/twoOfThem.png)
 
 Then here's how we visualize the output of OutputIEnum = SequenceCoroutines(A, B)
 
-![Composite coroutine](Image/composite.png)
+![Composite coroutine](Images/composite.png)
 
 Finally we want to add on C, so FinalIEnum = SequenceCoroutines(OutputIEnum, C)
 
-![Aggregate coroutine](Image/aggregate.png)
+![Aggregate coroutine](Images/aggregate.png)
 
 That final iEnum, when executed will play the lines "Hi Mae! | How are u | Bye!", in order, waiting for the user to press Space at each break.
 In summary, say we have a List<IEnumerator> Blocks - then we can sequence them into a single coroutine by doing: `var result = blocks.Aggregate(SequenceCoroutines)`. From here on out we can visualize dialogue as a sequence of coroutine "blocks" we're executing in order - whether those are dialogue bubbles, animations, or so forth. As long as its a coroutine it can be a part of our dialogue system.
