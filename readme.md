@@ -24,7 +24,7 @@ public static IEnumerator SpeechBubble(string text)
 Stitching these speech bubbles together shouldn't be tricky now. To explain with an awful diagram, imagine we want to sequence IEnumerators:
 A = SpeechBubble("Hi Mae!"), B = A = SpeechBubble("How are u"), C = SpeechBubble("Bye!")
 Here's a diagram of iEnumerators A and B - both just blocks that wait for user input.
-[Fig1]
+![Two coroutines](twoOfThem.png)
 Then here's how we visualize the output of OutputIEnum = SequenceCoroutines(A, B)
 [Fig2]
 Finally we want to add on C, so FinalIEnum = SequenceCoroutines(OutputIEnum, C)
