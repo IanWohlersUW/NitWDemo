@@ -6,6 +6,7 @@ Night in the Woods is a *very* writing-heavy game. I figured architecture I plan
 
 # Composing Coroutines
 I was inspired by [Alan Zucconi' article on nested coroutines](https://www.alanzucconi.com/2017/02/15/nested-coroutines-in-unity/) when thinking about how to sequence dialogue. I started by defining an operation to sequence two coroutines in order:
+
 ```
 public static IEnumerator SequenceCoroutines(IEnumerator first, IEnumerator second)
 {
@@ -13,7 +14,9 @@ public static IEnumerator SequenceCoroutines(IEnumerator first, IEnumerator seco
     yield return second;
 }
 ```
+
 Imagine we have a basic coroutine that logs a dialogue line, then waits for a user to press "Space"
+
 ```
 public static IEnumerator SpeechBubble(string text)
 {
@@ -21,14 +24,22 @@ public static IEnumerator SpeechBubble(string text)
     yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
 }
 ```
+
 Stitching these speech bubbles together shouldn't be tricky now. To explain with an awful diagram, imagine we want to sequence IEnumerators:
 A = SpeechBubble("Hi Mae!"), B = A = SpeechBubble("How are u"), C = SpeechBubble("Bye!")
+
 Here's a diagram of iEnumerators A and B - both just blocks that wait for user input.
-![Two coroutines](twoOfThem.png)
+
+![Two coroutines](Image/twoOfThem.png)
+
 Then here's how we visualize the output of OutputIEnum = SequenceCoroutines(A, B)
-[Fig2]
+
+![Composite coroutine](Image/composite.png)
+
 Finally we want to add on C, so FinalIEnum = SequenceCoroutines(OutputIEnum, C)
-[Fig3]
+
+![Aggregate coroutine](Image/aggregate.png)
+
 That final iEnum, when executed will play the lines "Hi Mae! | How are u | Bye!", in order, waiting for the user to press Space at each break.
 In summary, say we have a List<IEnumerator> Blocks - then we can sequence them into a single coroutine by doing: `var result = blocks.Aggregate(SequenceCoroutines)`. From here on out we can visualize dialogue as a sequence of coroutine "blocks" we're executing in order - whether those are dialogue bubbles, animations, or so forth. As long as its a coroutine it can be a part of our dialogue system.
 
