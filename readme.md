@@ -45,7 +45,7 @@ Finally we want to add on C, so FinalIEnum = SequenceCoroutines(OutputIEnum, C)
 
 ![Aggregate coroutine](Images/aggregate.png)
 
-That final iEnum, when executed will play the lines "Hi Mae! | How are u | Bye! |", in order, waiting for the user to press Space at each break.
+That final iEnum, when executed will play the lines "Hi Mae! | How are u | Bye! |", in order, waiting for the user to press spacebar at each "|".
 In summary, say we have a List\<IEnumerator\> Blocks - then we can sequence them into a single coroutine by doing: `var result = blocks.Aggregate(SequenceCoroutines)`. From here on out we can visualize dialogue as a sequence of coroutine "blocks" we're executing in order - whether those are dialogue bubbles, animations, or so forth. As long as its a coroutine it can be a part of our dialogue system. We can also see, from this example, this blocks can be nested, the final coroutine can be visualized as A -> B -> C, but it could also be thought of as ((A, B) C)
 
 # Creating a Parser
