@@ -12,7 +12,7 @@ public class SaveEngine : MonoBehaviour
             .ToDictionary(boolRef => AssetDatabase.GetAssetPath(boolRef),
                 boolRef => boolRef.isTrue);
 
-    // And restoration. Kinda sus how we serialize
+    // And restoration
     public static void RestoreBools(Dictionary<string, bool> serialized, string path)
     {
         var bools = Resources.LoadAll(path, typeof(BoolReference))

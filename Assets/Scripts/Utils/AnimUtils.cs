@@ -36,4 +36,10 @@ public class AnimUtils
         action();
         yield return null; // (Note that this action does take a full frame)
     }
+
+    public static IEnumerator SpeechBubble(string text)
+    {
+        Debug.Log(text);
+        yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
+    }
 }
