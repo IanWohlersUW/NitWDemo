@@ -1,6 +1,10 @@
 # Ian Wohlers Coding Sample
+
+![Dialogue generator in action](Images/demo.gif)
+
 ## Night in the Woods Dialogue System
 While cover letters are great, I wanted to provide a concrete example of my coding style, and what it'd be like to collaborate with me. This whole repo was coded up over the last three days under the premise "if I had nothing to go off of, how would I start to build Night in the Woods?" (I had no prior knowledge of tools used to develop NitW like Yarn Spinner)
+
 # Guiding Principles:
 Night in the Woods is a *very* writing-heavy game. I figured architecture I plan out for this dialogue system should be usable by a writer - I tried to come up with a syntax that looked like writing stage notes because I assumed that'd be most intuitive for an writer. Basically I knew I needed a text parsed, and I envisioned a system that could take in a full script of text and output a single coroutine that, when started, animates that entire scene.
 
