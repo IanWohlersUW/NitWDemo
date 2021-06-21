@@ -6,7 +6,7 @@
 While cover letters are great, I wanted to provide a concrete example of my coding style, and what it'd be like to collaborate with me. This whole repo was coded up over the last three days under the premise - "if I had nothing to go off of, how would I start to build Night in the Woods?" (I had no prior knowledge of tools used to develop NitW like Yarn Spinner)
 
 # Guiding Principles:
-Night in the Woods is a *very* writing-heavy game. My biggest priority in designing a dialogue system is that it'd be usable *by* a writer - I tried to come up with a syntax that looked like stage notes because I felt that'd be most intuitive for a writer. Based on that priority I knew I needed a text parser and I envisioned a system that would consume a full script of "stage notes" and output a single coroutine that, when started, would animate the scene described by the text.
+Night in the Woods is a *very* writing-heavy game. My biggest priority in designing a dialogue system is that it'd be usable *by* a writer - I tried to come up with syntax that looked like stage notes because I felt that'd be most intuitive for a writer. Based on that priority I knew I needed a text parser and I envisioned a system that would consume a full script of "stage notes" and output a single coroutine that, when started, would animate the scene described by the text.
 
 # Composing Coroutines
 I was inspired by [Alan Zucconi's article on nested coroutines](https://www.alanzucconi.com/2017/02/15/nested-coroutines-in-unity/) when thinking about how to sequence dialogue. I started by defining an operation to sequence two coroutines in order:
@@ -33,7 +33,7 @@ I'd like to demo how that SequenceCoroutines method could sequence a few "speech
 
 A = SpeechBubble("Hi Mae!"), B = SpeechBubble("How are u"), C = SpeechBubble("Bye!")
 
-Here's a diagram of iEnumerators A and B - both just blocks log on start then wait for user input.
+Here's a diagram of iEnumerators A and B - both coroutine "blocks" just log on start then wait for user input.
 
 ![Two coroutines](Images/twoOfThem.png)
 
@@ -46,7 +46,7 @@ Finally we want to add on C, so FinalIEnum = SequenceCoroutines(OutputIEnum, C)
 ![Aggregate coroutine](Images/aggregate.png)
 
 That final iEnum, when executed will play the lines "Hi Mae! | How are u | Bye! |", in order, waiting for the user to press spacebar at each "|".
-In summary, say we have a List\<IEnumerator\> Blocks - then we can sequence them into a single coroutine by doing: `var result = blocks.Aggregate(SequenceCoroutines)`. From here on out we can visualize dialogue as a sequence of coroutine "blocks" we're executing in order - whether those are dialogue bubbles, animations, or so forth. As long as its a coroutine it can be a part of our dialogue system. We can also see, from this example, this blocks can be nested, the final coroutine can be visualized as A -> B -> C, but it could also be thought of as ((A, B) C)
+To generalize, say we have a List\<IEnumerator\> Blocks - we can sequence them into a single coroutine by doing: `var result = blocks.Aggregate(SequenceCoroutines)`. From here on out we can visualize dialogue as a timeline of coroutine "blocks" we're executing in order - whether those are dialogue bubbles, animations, or so forth. As long as its a coroutine it can be a part of our dialogue system. We can also see from this example how blocks can be nested - the final coroutine can be visualized as A -> B -> C, but it could also be thought of as ((A, B) C)
 
 # Creating a Parser
 (See Dialogue.cs for a full breakdown of the dialogue syntax)
